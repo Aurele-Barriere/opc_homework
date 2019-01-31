@@ -133,8 +133,48 @@ Résultats:
 \end{lstlisting}
 
 \subsection*{Question 5}
+\begin{lstlisting}
+TransfoSchedule := [N] -> {
+  S0[i] -> [i,0,0];
+  S1[i,j] -> [j,1,i+j];
+};
+
+codegen(TransfoSchedule * Domain);
+\end{lstlisting}
+
+\begin{lstlisting}
+for (int c0 = 0; c0 < N; c0 += 1) {
+  S0(c0);
+  if (c0 >= 1)
+    for (int c2 = 2 * c0 + 1; c2 < N + c0; c2 += 1)
+      S1(-c0 + c2, c0);
+}
+\end{lstlisting}
+
 
 \subsection*{Question 6}
+\begin{lstlisting}
+IslSchedule := TransfoSchedule; 
+IslSchedule := IslSchedule + {}; # flatten the schedule tree
+
+print "IslSchedule";
+print IslSchedule;
+
+IslBefore := IslSchedule << IslSchedule;
+
+print "IslBefore";
+print IslBefore;
+
+print "Does IslSchedule respects RaW deps?";
+print RaW <= IslBefore;
+
+print "Does IslSchedule respects WaW deps?";
+print WaW <= IslBefore;
+
+print "Does IslSchedule respects WaR deps?";
+print WaR <= IslBefore;
+
+\end{lstlisting}
 
 \subsection*{Question 7}
 
