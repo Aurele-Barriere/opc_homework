@@ -26,7 +26,7 @@
 \begin{document}
 \maketitle
 
-\subsection*{Question 1}
+\section*{Question 1}
 Les commandes correspondent aux opérations polyhédriques suivantes:
 \begin{lstlisting}
 [N] -> { [i, j] : 0 < i < N and j > i and 15 <= j <= 33 and j < N }
@@ -41,11 +41,11 @@ Le second est le cardinal du précédent domaine. Comme attendu, il dépend de l
 
 TODO
 
-\subsection*{Question 2}
+\section*{Question 2}
 
-Étant donnés des instructions \lstinline{S} et \lstinline{T} dont chaque domaine d'exécution est décrit dans \lstinline{Domain}, le code donné va générer le code des boucles qui effectuent ces instructions dans l'ordre donné par \lstinline{Schedule}. \lstinline{S} et \lstinline{T} sont paramétrés par une ou deux valeurs, $i,j$ ou $k$.
+Étant donnés des instructions \lstinline{S} et \lstinline{T} dont chaque domaine d'exécution est décrit dans \lstinline{Domain}, le code donné va générer le code des boucles qui effectuent ces instructions dans l'ordre donné par \lstinline{Schedule}. \lstinline{S} et \lstinline{T} sont paramétrés par une ou deux valeurs, $i,j$ ou $k$, des variables d'itération.
 
-Dans ce cas, l'ordonnancement précise bien que les instructions de \lstinline{S} doivent êtres faites d'abors (0 en première coordonnée), et par ordre de \lstinline{k}.
+Dans ce cas, l'ordonnancement précise bien que les instructions de \lstinline{S} doivent êtres faites d'abord (0 en première coordonnée), et par ordre de \lstinline{k}.
 Ainsi, le code généré commence par une boucle qui parcoure le domaine de \lstinline{S} par ordre de \lstinline{k}.
 
 Ensuite, l'ordonnancement précise que les itérations de \lstinline{T} doivent être faites par ordre croissant lexicographique de $(j,i+j)$.
@@ -62,23 +62,19 @@ Code généré:
       T(-c1 + c2, c1);
 \end{lstlisting}
 
-\subsection*{Question 3}
+\section*{Question 3}
 
 On écrit les commandes suivantes:
 \begin{lstlisting}
 D := [N] -> { [i,j,k] : 0<=i<j and 0<=j<N and i<k<j};
-print D;
-
 P := { [i,j,k] -> [ip,kp] : ip=i and kp=k};
 print P(D);
-
 C:=card(P(D));
 print C;
 \end{lstlisting}
 
 qui donnent le résultat suivant:
 \begin{lstlisting}
-[N] -> { [i, j, k] : i >= 0 and j > i and 0 <= j < N and i < k < j }
 [N] -> { [ip, kp] : ip >= 0 and ip < kp <= -2 + N }
 [N] -> { (1 - 3/2 * N + 1/2 * N^2) : N >= 3 }
 \end{lstlisting}
@@ -88,7 +84,10 @@ D'un domaine à 3 dimensions, on n'en conserve que deux.
 Ainsi, on retient tous les $(i,k)$ tels que $\exists j, (i,j,k)\in D$.
 Enfin la fonction \lstinline{card} permet de compter les points du domaine obtenu.
 
-\subsection*{Question 4}
+La projection contient donc $1-\frac{3\times N}{2} + \frac{N^2}{2}$ points, lorsque $N>3$. Sinon, la proprojection est l'ensemble vide.
+
+
+\section*{Question 4}
 
 \begin{lstlisting}
 Domain := [N] -> {
@@ -104,15 +103,14 @@ Schedule := [N] -> {
 Read := [N] -> {
   S1[i,j] -> Y[j];
   S1[i,j] -> T[i-j];
-};
+} * Domain;
 
 Write := [N] -> {
   S0[i] -> Y[i];
   S1[i,j] -> Y[i];
-};
+} * Domain;
 
 Before := Schedule << Schedule;
-
 
 RaW := (Write . (Read^-1)) * Before;
 WaW := (Write . (Write^-1)) * Before;
@@ -123,16 +121,33 @@ print WaW;
 print WaR;
 \end{lstlisting}
 
+\lstinline{Domain} définit les domaines d'itérations des instructions \lstinline{S0} et \lstinline{S1}.
+Ces contraintes sont tirées directement du flot de contrôle du programme: on regarde les guardes des boucles.
+
+\lstinline{Schedule} décrit l'ordonnancement original (sans transformation de boucle).
+Dans ce programme, pour chaque valeur de $i$ on éxécute d'abord \lstinline{S0}, puis toutes les éxécutions de \lstinline{S1} pour $i$ et chaque valeur de $j$ par ordre croissant.
+Cela correspond à l'ordre lexicographique donné ici. Comme $j>0$, on est garantis d'exécuter \lstinline{S0} avant les exécutions de \lstinline{S1} correspondantes.
+
+Les relations \lstinline{Read} et \lstinline{Write} définissent les lectures et écritures en mémoires.
+Ces relations sont tirées directement de la syntaxe du programme.
+Par exemple, lors de l'itération $(i,j)$ de \lstinline{S1}, on écrit \lstinline{Y[i]}.
+La relation \lstinline{Write} contient alors \lstinline{ S1[i,j] -> Y[i];}.
+Cette définition est intersectée avec \lstinline{Domain} pour n'inclure que les itérations qui sont en effet exécutées. Par exemple, \lstinline{Y[N+1]} ne sera pas écrit.
+
+\lstinline{Before} exprime qu'une instruction est lancée avant une autre dans l'ordonnancement.
+Il s'agit du domaine des paires $(v,v')$ de vecteurs d'itérations tels que $v$ est exécuté avant $v'$.
+Enfin, les définitions de \lstinline{RaW}, \lstinline{WaW} et \lstinline{WaR} représentent les paires de vecteurs d'itérations où, par exemple, une case est lue alors qu'elle avait été écrite avant.
+
 Résultats:
 \begin{lstlisting}
-[N] -> { S0[i] -> S1[ip, i] : ip > i; S0[i] -> S1[i, i] : i > 0; S1[i, j] -> S1[ip, i] : ip > i;
-         S1[i, j] -> S1[i, i] : j < i }
-[N] -> { S1[i, j] -> S1[i, jp] : jp > j; S0[i] -> S1[i, j] : j > 0; S1[i, j] -> S0[i] : j < 0 }
-[N] -> { S1[i, j] -> S0[j] : j > i; S1[i, i] -> S0[i] : i < 0; S1[i, j] -> S1[j, jp] : j > i;
-         S1[i, i] -> S1[i, jp] : jp > i }
+[N] -> { S0[i] -> S1[i', i] : 0 < i < N and i' > i and 0 <= i' < N; S1[i, j] -> S1[i', i] : 0 < i < N and 0 < j < i and i' > i and 0 <= i' < N }
+[N] -> { S1[i, j] -> S1[i, j'] : 0 <= i < N and 0 < j < i and j' > j and 0 < j' < i; S0[i] -> S1[i, j] : 0 <= i < N and 0 < j < i }
+[N] -> {  }
 \end{lstlisting}
 
-\subsection*{Question 5}
+On observe en particulier aucune dépendance \lstinline{WAR}: dans cet ordonnancement, on ne lit une case \lstinline{Y[j]} qu'après l'avoir écrite (car $j<i$ pour toutes itérations).
+
+\section*{Question 5}
 \begin{lstlisting}
 TransfoSchedule := [N] -> {
   S0[i] -> [i,0,0];
@@ -141,6 +156,8 @@ TransfoSchedule := [N] -> {
 
 codegen(TransfoSchedule * Domain);
 \end{lstlisting}
+
+On décrit le nouvel ordonnancement. Le code généré est le suivant:
 
 \begin{lstlisting}
 for (int c0 = 0; c0 < N; c0 += 1) {
@@ -151,41 +168,110 @@ for (int c0 = 0; c0 < N; c0 += 1) {
 }
 \end{lstlisting}
 
+La condition \lstinline{if} apparaît car seul \lstinline{S0} doit être exécutée lors de la première itération: il n'existe pas de $j\leq 0$ dans le domaine.
 
-\subsection*{Question 6}
+\section*{Question 6}
 \begin{lstlisting}
-IslSchedule := TransfoSchedule; 
-IslSchedule := IslSchedule + {}; # flatten the schedule tree
+TransfoSchedule := [N] -> {
+  S0[i] -> [i,0,0];
+  S1[i,j] -> [j,1,i+j];
+};
 
-print "IslSchedule";
-print IslSchedule;
+TransfoBefore := TransfoSchedule << TransfoSchedule;
 
-IslBefore := IslSchedule << IslSchedule;
+print "RaW?";
+print RaW <= TransfoBefore;
 
-print "IslBefore";
-print IslBefore;
+print "WaW?";
+print WaW <= TransfoBefore;
 
-print "Does IslSchedule respects RaW deps?";
-print RaW <= IslBefore;
-
-print "Does IslSchedule respects WaW deps?";
-print WaW <= IslBefore;
-
-print "Does IslSchedule respects WaR deps?";
-print WaR <= IslBefore;
-
+print "WaR?";
+print WaR <= TransfoBefore;
 \end{lstlisting}
 
-\subsection*{Question 7}
+Le nouvel ordonnancement est comparé aux définitions de dépendances calculées avec l'ordonnancement original (question 4).
+En particulier, on veut vérifier que, pour chaque paire $(v,v')$ de vecteurs d'itérations dans une dépendance, cette paire est aussi dans \lstinline{TransfoBefore}, ce qui veut dire que $v$ est bien exécuté avant $v'$ dans le nouvel ordonnancement. On utilise donc simplement l'inclusion \lstinline{<=} entre ces ensembles de vecteurs.
 
-\subsection*{Question 8}
+\begin{lstlisting}
+"RaW?"
+True
+"WaW?"
+False
+"WaR?"
+True
+\end{lstlisting}
 
-\subsection*{Question 9}
+On remarque qu'une dépendance \lstinline{WaW} n'est pas satisfaite.
+En effet, avec ce nouvel ordonnancement on peut exécuter $S1(1,0)$ avant $S0(1)$, et donc écrire dans \lstinline{Y[1]} dans l'ordre inverse du programme original.
 
-\subsection*{Question 10}
+Ainsi, la sémantique du programme n'est pas conservé par cette transformation de boucles.
 
-\subsection*{Question 11}
+\section*{Question 7}
 
-\subsection*{Question 12}
+\begin{lstlisting}
+DS0 := [N] -> { S0[i] : 0<=i<N; };
+DS1 := [N] -> { S1[i, j] : 0<=i<N and 1<=j<i; };
+print (card (DS0));
+print (card (DS1));
+\end{lstlisting}
+
+On commence par définir les domaines d'itérations de chaque instruction. Ces définitions proviennent de la syntaxe du programme, et dépendent de N.
+Pour chaque élément dans ces domaines, l'instruction correspondante est exécutée exactement une fois.
+Ainsi, on peut donc se contenter de calculer le cardinal de ces deux ensembles.
+
+\begin{lstlisting}
+[N] -> { N : N > 0 }
+[N] -> { (1 - 3/2 * N + 1/2 * N^2) : N >= 3 }
+\end{lstlisting}
+
+\lstinline{S0} est donc exécutée $N$ fois quand $N>0$, et \lstinline{S1} $1-\frac{3\times N}{2} + \frac{N^2}{2}$ fois si $N\geq 3$.
+
+\section*{Question 8}
+\begin{lstlisting}
+ArrayAccess := [N] -> {
+  S1[i,j] -> T[i-j];
+} * DS1;
+
+print(ran(ArrayAccess));
+print(card(ran(ArrayAccess)));
+\end{lstlisting}
+
+La relation \lstinline{ArrayAccess} associe à chaque itération de \lstinline{S1} la case écrite de \lstinline{T} associée.
+On intersecte cette définition avec \lstinline{DS1} (le domaine d'itération de \lstinline{S1}), pour ne conserver que les itérations réellement effectuées par le programme.
+
+Cet ensemble contient tous les vecteurs d'itérations où \lstinline{T} est écrit, mais une case peut être écrite plusieurs fois. On utilise alors la fonctions \lstinline{ran}, qui calcule l'image de cette relation, et donc l'ensemble des cases distinctes de \lstinline{T} écrites.
+Enfin, il suffit de compter le cardinal de ce nouvel ensemble.
+
+\begin{lstlisting}
+[N] -> { T[i0] : 0 < i0 <= -2 + N }
+[N] -> { (-2 + N) : N >= 3 }
+\end{lstlisting}
+
+On constate donc que le programme écrit dans $N-2$ cases différentes de \lstinline{T} pour $N\geq 3$.
+\lstinline{ran(ArrayAccess)} nous donne en particulier quelles sont ces cases: tous les \lstinline{T[i0]} pour $i_0\in[1,N-2]$.
+
+
+\section*{Question 9}
+
+\begin{lstlisting}
+ArrayAccessIntern := [N,i] -> {
+  S1[i,j] -> T[i-j];
+} * DS1;
+
+print(card(ran(ArrayAccessIntern)));
+\end{lstlisting}
+
+Cette fois-ci, la relation \lstinline{ArrayAccessIntern} décrit les cases de \lstinline{T} accédées dans la boucle interne $i$.
+Encore une fois, on utilise \lstinline{ran} pour obtenir l'ensemble de ces cases écrites, et on affiche son cardinal.
+
+\begin{lstlisting}
+[N, i] -> { (-1 + i) : 2 <= i < N }
+\end{lstlisting}
+
+On constate alors que $i-1$ cases sont écrites pendant l'itération $i$.
+
+\section*{Question 10}
+
+\section*{Question 12}
 
 \end{document}
