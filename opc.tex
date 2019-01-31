@@ -26,4 +26,126 @@
 \begin{document}
 \maketitle
 
+\subsection*{Question 1}
+Les commandes correspondent aux opérations polyhédriques suivantes:
+\begin{lstlisting}
+[N] -> { [i, j] : 0 < i < N and j > i and 15 <= j <= 33 and j < N }
+[N] -> { 437 : N >= 35; (-90 - 3/2 * N + 1/2 * N^2) : 16 <= N <= 34 }
+[N] -> { [ip, jp] : 16*floor((jp)/16) = jp and ip >= 0 and 16ip <= -2 + N and 0 <= jp <= 15 }
+\end{lstlisting}
+
+Le premier domaine affiché est l'intersection des deux domaines \lstinline{A} et \lstinline{B}.
+On y retrouve bien les contraintes des deux domaines. La contrainte existentielle a été supprimée: elle ne contraint pas le domaine A, puisque pour chaques valeurs $(i,j)\in A$, $i+j>6$. Les contraintes redondantes (comme $i\geq 0$ alors qu'on a aussi $i>0$) ont été supprimées.
+
+Le second est le cardinal du précédent domaine. Comme attendu, il dépend de la valeur de \lstinline{N}.
+
+TODO
+
+\subsection*{Question 2}
+
+Étant donnés des instructions \lstinline{S} et \lstinline{T} dont chaque domaine d'exécution est décrit dans \lstinline{Domain}, le code donné va générer le code des boucles qui effectuent ces instructions dans l'ordre donné par \lstinline{Schedule}. \lstinline{S} et \lstinline{T} sont paramétrés par une ou deux valeurs, $i,j$ ou $k$.
+
+Dans ce cas, l'ordonnancement précise bien que les instructions de \lstinline{S} doivent êtres faites d'abors (0 en première coordonnée), et par ordre de \lstinline{k}.
+Ainsi, le code généré commence par une boucle qui parcoure le domaine de \lstinline{S} par ordre de \lstinline{k}.
+
+Ensuite, l'ordonnancement précise que les itérations de \lstinline{T} doivent être faites par ordre croissant lexicographique de $(j,i+j)$.
+Le code généré respecte cet ordre.
+En effet, pour respecter cet ordre, il faut fixer la seconde variable et faire augmenter la première jusqu'à $N$, puis augmenter la seconde variable et recommencer.
+C'est ainsi que procède le code généré: \lstinline{-c1 + c2} commence à 0 et est incrémenté dans la boucle interne, alors que \lstinline{c1} (qui correspond à $j$) est augmenté dans la boucle externe.
+
+Code généré:
+\begin{lstlisting}
+  for (int c1 = 0; c1 < 2 * n - 1; c1 += 1)
+    S(c1);
+  for (int c1 = 0; c1 < n; c1 += 1)
+    for (int c2 = c1; c2 < n + c1; c2 += 1)
+      T(-c1 + c2, c1);
+\end{lstlisting}
+
+\subsection*{Question 3}
+
+On écrit les commandes suivantes:
+\begin{lstlisting}
+D := [N] -> { [i,j,k] : 0<=i<j and 0<=j<N and i<k<j};
+print D;
+
+P := { [i,j,k] -> [ip,kp] : ip=i and kp=k};
+print P(D);
+
+C:=card(P(D));
+print C;
+\end{lstlisting}
+
+qui donnent le résultat suivant:
+\begin{lstlisting}
+[N] -> { [i, j, k] : i >= 0 and j > i and 0 <= j < N and i < k < j }
+[N] -> { [ip, kp] : ip >= 0 and ip < kp <= -2 + N }
+[N] -> { (1 - 3/2 * N + 1/2 * N^2) : N >= 3 }
+\end{lstlisting}
+
+\lstinline{P} représente la projection.
+D'un domaine à 3 dimensions, on n'en conserve que deux.
+Ainsi, on retient tous les $(i,k)$ tels que $\exists j, (i,j,k)\in D$.
+Enfin la fonction \lstinline{card} permet de compter les points du domaine obtenu.
+
+\subsection*{Question 4}
+
+\begin{lstlisting}
+Domain := [N] -> {
+    S0[i] : 0<=i<N;
+    S1[i, j] : 0<=i<N and 1<=j<i;
+};
+
+Schedule := [N] -> {
+   S0[i] -> [i,0];
+   S1[i,j] -> [i, j];
+};
+
+Read := [N] -> {
+  S1[i,j] -> Y[j];
+  S1[i,j] -> T[i-j];
+};
+
+Write := [N] -> {
+  S0[i] -> Y[i];
+  S1[i,j] -> Y[i];
+};
+
+Before := Schedule << Schedule;
+
+
+RaW := (Write . (Read^-1)) * Before;
+WaW := (Write . (Write^-1)) * Before;
+WaR := (Read . (Write^-1)) * Before;
+
+print RaW;
+print WaW;
+print WaR;
+\end{lstlisting}
+
+Résultats:
+\begin{lstlisting}
+[N] -> { S0[i] -> S1[ip, i] : ip > i; S0[i] -> S1[i, i] : i > 0; S1[i, j] -> S1[ip, i] : ip > i;
+         S1[i, j] -> S1[i, i] : j < i }
+[N] -> { S1[i, j] -> S1[i, jp] : jp > j; S0[i] -> S1[i, j] : j > 0; S1[i, j] -> S0[i] : j < 0 }
+[N] -> { S1[i, j] -> S0[j] : j > i; S1[i, i] -> S0[i] : i < 0; S1[i, j] -> S1[j, jp] : j > i;
+         S1[i, i] -> S1[i, jp] : jp > i }
+\end{lstlisting}
+
+\subsection*{Question 5}
+
+\subsection*{Question 6}
+
+\subsection*{Question 7}
+
+\subsection*{Question 8}
+
+\subsection*{Question 9}
+
+\subsection*{Question 10}
+
+\subsection*{Question 11}
+
+\subsection*{Question 12}
+
 \end{document}
