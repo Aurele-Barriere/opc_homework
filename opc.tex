@@ -25,6 +25,7 @@
 
 \begin{document}
 \maketitle
+\vspace{1cm}
 
 \section*{Question 1}
 Les commandes correspondent aux opérations polyhédriques suivantes:
@@ -39,7 +40,8 @@ On y retrouve bien les contraintes des deux domaines. La contrainte existentiell
 
 Le second est le cardinal du précédent domaine. Comme attendu, il dépend de la valeur de \lstinline{N}.
 
-TODO
+Enfin, \lstinline{E} est une transformation de domaine de vecteurs d'itération.
+Appliqué à \lstinline{B}, on obtient l'ensemble des $(i',j')$ tels qu'il existe $(i,j)\in B$ et $i'=\frac{i}{16}$ et $j'=i\% 16$.
 
 \section*{Question 2}
 
@@ -194,6 +196,7 @@ print WaR <= TransfoBefore;
 Le nouvel ordonnancement est comparé aux définitions de dépendances calculées avec l'ordonnancement original (question 4).
 En particulier, on veut vérifier que, pour chaque paire $(v,v')$ de vecteurs d'itérations dans une dépendance, cette paire est aussi dans \lstinline{TransfoBefore}, ce qui veut dire que $v$ est bien exécuté avant $v'$ dans le nouvel ordonnancement. On utilise donc simplement l'inclusion \lstinline{<=} entre ces ensembles de vecteurs.
 
+Résultat:
 \begin{lstlisting}
 "RaW?"
 True
@@ -221,6 +224,7 @@ On commence par définir les domaines d'itérations de chaque instruction. Ces d
 Pour chaque élément dans ces domaines, l'instruction correspondante est exécutée exactement une fois.
 Ainsi, on peut donc se contenter de calculer le cardinal de ces deux ensembles.
 
+Résultat:
 \begin{lstlisting}
 [N] -> { N : N > 0 }
 [N] -> { (1 - 3/2 * N + 1/2 * N^2) : N >= 3 }
@@ -244,6 +248,7 @@ On intersecte cette définition avec \lstinline{DS1} (le domaine d'itération de
 Cet ensemble contient tous les vecteurs d'itérations où \lstinline{T} est écrit, mais une case peut être écrite plusieurs fois. On utilise alors la fonctions \lstinline{ran}, qui calcule l'image de cette relation, et donc l'ensemble des cases distinctes de \lstinline{T} écrites.
 Enfin, il suffit de compter le cardinal de ce nouvel ensemble.
 
+Résultat:
 \begin{lstlisting}
 [N] -> { T[i0] : 0 < i0 <= -2 + N }
 [N] -> { (-2 + N) : N >= 3 }
@@ -266,6 +271,7 @@ print(card(ran(ArrayAccessIntern)));
 Cette fois-ci, la relation \lstinline{ArrayAccessIntern} décrit les cases de \lstinline{T} accédées dans la boucle interne $i$.
 Encore une fois, on utilise \lstinline{ran} pour obtenir l'ensemble de ces cases écrites, et on affiche son cardinal.
 
+Résultat:
 \begin{lstlisting}
 [N, i] -> { (-1 + i) : 2 <= i < N }
 \end{lstlisting}
@@ -287,6 +293,7 @@ On intersecte cette définition avec \lstinline{DS1} pour ne conserver que les i
 
 Ensuite, \lstinline{ran(ReadT)} représente exactement l'ensemble des vecteurs d'itérations modifiant la case $p$. Il reste alors à calculer son cardinal.
 
+Résultat:
 \begin{lstlisting}
 [N, p] -> { ((-1 + N) - p) : 0 < p <= -2 + N }
 \end{lstlisting}
@@ -314,6 +321,7 @@ Cependant, cet ensemble contient aussi les exécutions de \lstinline{S1}. Comme 
 Enfin, \lstinline{nextDS0} est donc le domaine des itérations restant à exécuter pour \lstinline{S0}, et on peut calculer son cardinal.
 Le même raisonnement nous permet de calculer \lstinline{nextDS1}: le domaine des itérations restant à exécuter pour \lstinline{S1}.
 
+Résultat:
 \begin{lstlisting}
 [N, p] -> { S0[i] : 0 <= p < N and i > p and 0 <= i < N }
 [N, p] -> { ((-1 + N) - p) : 0 <= p <= -2 + N }
@@ -325,7 +333,7 @@ Le même raisonnement nous permet de calculer \lstinline{nextDS1}: le domaine de
 \end{lstlisting}
 
 On constate donc qu'il faut encore exécuter $N-p-1$ fois \lstinline{S0} après avoir exécuté \lstinline{S0[p]}.
-Et qu'il faut exécuter \lstinline{S1} encore $\frac{-3\times N + N^2 + 3\times p - p^2}{2} -q$ fois, après avoir exécuté \lstinline{S1[p,q]}.
+Et que le nombre restantes d'exécutions de \lstinline{S1} après avoir exécuté \lstinline{S1[p,q]} dépend de conditions sur $p$ et $q$.
 
 
 
