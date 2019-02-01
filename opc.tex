@@ -12,7 +12,7 @@
                 stringstyle=\color{Violet}\ttfamily,
                 commentstyle=\color{MidnightBlue}\ttfamily,
                 morecomment=[l][\color{magenta}]{\#},
-                morekeywords={bool, list, int, color, state, sent, received},
+                morekeywords={bool, list, int, and, print},
                 emph={spontaneous_choice, take_snapshot, process_event%  
                 },emphstyle={\color{Maroon}}
 }
@@ -126,7 +126,7 @@ Ces contraintes sont tirées directement du flot de contrôle du programme: on r
 
 \lstinline{Schedule} décrit l'ordonnancement original (sans transformation de boucle).
 Dans ce programme, pour chaque valeur de $i$ on éxécute d'abord \lstinline{S0}, puis toutes les éxécutions de \lstinline{S1} pour $i$ et chaque valeur de $j$ par ordre croissant.
-Cela correspond à l'ordre lexicographique donné ici. Comme $j>0$, on est garantis d'exécuter \lstinline{S0} avant les exécutions de \lstinline{S1} correspondantes.
+Cela correspond à l'ordre lexicographique donné ici. Comme $j>0$, on est garanti d'exécuter \lstinline{S0} avant les exécutions de \lstinline{S1} correspondantes.
 
 Les relations \lstinline{Read} et \lstinline{Write} définissent les lectures et écritures en mémoires.
 Ces relations sont tirées directement de la syntaxe du programme.
@@ -140,8 +140,10 @@ Enfin, les définitions de \lstinline{RaW}, \lstinline{WaW} et \lstinline{WaR} r
 
 Résultats:
 \begin{lstlisting}
-[N] -> { S0[i] -> S1[i', i] : 0 < i < N and i' > i and 0 <= i' < N; S1[i, j] -> S1[i', i] : 0 < i < N and 0 < j < i and i' > i and 0 <= i' < N }
-[N] -> { S1[i, j] -> S1[i, j'] : 0 <= i < N and 0 < j < i and j' > j and 0 < j' < i; S0[i] -> S1[i, j] : 0 <= i < N and 0 < j < i }
+[N] -> { S0[i] -> S1[ip, i] : 0 < i < N and ip > i and 0 <= ip < N;
+         S1[i, j] -> S1[ip, i] : 0 < i < N and 0 < j < i and ip > i and 0 <= ip < N }
+[N] -> { S1[i, j] -> S1[i, jp] : 0 <= i < N and 0 < j < i and jp > j and 0 < jp < i;
+         S0[i] -> S1[i, j] : 0 <= i < N and 0 < j < i }
 [N] -> {  }
 \end{lstlisting}
 
@@ -272,6 +274,59 @@ On constate alors que $i-1$ cases sont écrites pendant l'itération $i$.
 
 \section*{Question 10}
 
+\begin{lstlisting}
+ReadT := [p] -> {
+  S1[i,j] -> [i,j] : i-j = p;
+} * DS1;
+
+print (card(ran(ReadT)));
+\end{lstlisting}
+
+\lstinline{ReadT} de $p$ associe à chaque itération de \lstinline{S1} où la case $p$ est accédée le vecteur d'itération correspondant.
+On intersecte cette définition avec \lstinline{DS1} pour ne conserver que les itérations réellement effectuées par le programme.
+
+Ensuite, \lstinline{ran(ReadT)} représente exactement l'ensemble des vecteurs d'itérations modifiant la case $p$. Il reste alors à calculer son cardinal.
+
+\begin{lstlisting}
+[N, p] -> { ((-1 + N) - p) : 0 < p <= -2 + N }
+\end{lstlisting}
+
+Ainsi, il y a $N-1-p$ itérations de \lstinline{S1} qui modifient la case $p$.
+
 \section*{Question 12}
+\begin{lstlisting}
+currentS0 := [p] -> { S0[p]} * DS0;
+nextIt0 := Before * currentS0;
+nextDS0 := ran(nextIt0) * DS0;
+print (nextDS0);
+print (card(nextDS0));
+
+currentS1 := [p,q] -> { S1[p,q]} * DS1;
+nextIt1 := Before * currentS1;
+nextDS1 := ran(nextIt1) * DS1;
+print(nextDS1);
+print (card(nextDS1));
+\end{lstlisting}
+
+\lstinline{currentS0} associe à $p$ l'itération \lstinline{S0[p]} si elle est dans le domaine de \lstinline{S0}.
+\lstinline{nextIt0} associe à cette instruction l'ensemble des itérations du schedule qui sont éxécutées après cette itération. Avec \lstinline{ran}, on récupère exactement les itérations exécutées après \lstinline{S0[p]}.
+Cependant, cet ensemble contient aussi les exécutions de \lstinline{S1}. Comme ici on ne s'intéresse qu'au domaine restant pour \lstinline{S0}, on l'intersecte avec \lstinline{DS0}.
+Enfin, \lstinline{nextDS0} est donc le domaine des itérations restant à exécuter pour \lstinline{S0}, et on peut calculer son cardinal.
+Le même raisonnement nous permet de calculer \lstinline{nextDS1}: le domaine des itérations restant à exécuter pour \lstinline{S1}.
+
+\begin{lstlisting}
+[N, p] -> { S0[i] : 0 <= p < N and i > p and 0 <= i < N }
+[N, p] -> { ((-1 + N) - p) : 0 <= p <= -2 + N }
+[N, p, q] -> { S1[i, j] : 0 <= p < N and 0 < q < p and i > p and 0 <= i < N and 0 < j < i;
+               S1[p, j] : 0 <= p < N and 0 < q < p and j > q and 0 < j < p }
+[N, p, q] -> { (((-3/2 * N + 1/2 * N^2) + 3/2 * p - 1/2 * p^2) - q) : p <= -2 + N and 0 < q <= -2 + p;
+               ((1 - 3/2 * N + 1/2 * N^2) + 1/2 * p - 1/2 * p^2) : q = -1 + p and 2 <= p <= -2 + N;
+               ((-1 + p) - q) : p = -1 + N and 0 < q <= -3 + N }
+\end{lstlisting}
+
+On constate donc qu'il faut encore exécuter $N-p-1$ fois \lstinline{S0} après avoir exécuté \lstinline{S0[p]}.
+Et qu'il faut exécuter \lstinline{S1} encore $\frac{-3\times N + N^2 + 3\times p - p^2}{2} -q$ fois, après avoir exécuté \lstinline{S1[p,q]}.
+
+
 
 \end{document}
